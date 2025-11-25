@@ -1,0 +1,477 @@
+<!-- Chosen Palette: Warm & Focused (#FAF7E6, #E8D8C4, #7D5A50, #B4846C) -->
+<!-- Application Structure Plan: A tabbed dashboard SPA. Nav: [Overview, Grammar Hub, Vocab Duel, Study Zone]. Overview: Key stats from the course (2 Units, 3 Verbs, 5 Idioms, etc.) using large text. Grammar Hub: Interactive toggles for SER, ESTAR, TENER conjugation tables. An interactive "Ser vs. Estar" quiz where users click sentences to assign them to the correct verb. Vocab Duel: A grid of cards (Pen, Computer, etc.) that 'flip' on click to reveal the Spain vs. LatAm Spanish words. Study Zone: A set of mini-quizzes (MCQ, Fill-in-the-blank) based on the exam content (Telling Time, Interrogatives, Idioms). This structure transforms the static guide/exam into an active, non-linear learning experience, which is more usable and engaging for a student. -->
+<!-- Visualization & Content Choices: 
+- Overview Stats (Home): Report Info: 2 Units, 3 Verbs, 5+ Idioms, 5+ Vocab Duels. -> Goal: Inform. -> Viz: Dynamic Stats (Large HTML text). -> Interaction: None. -> Justification: Quick, high-impact summary. -> Method: HTML/Tailwind.
+- Verb Conjugations (Grammar Hub): Report Info: SER, ESTAR, TENER tables. -> Goal: Organize. -> Viz: HTML Tables. -> Interaction: Tables are hidden. Clickable buttons toggle visibility (JS). -> Justification: Prevents overwhelming user. Active reveal aids memory. -> Method: HTML/Tailwind/JS.
+- Ser vs. Estar Quiz (Grammar Hub): Report Info: "Danger Zone" sentences. -> Goal: Organize/Compare. -> Viz: Two columns (SER, ESTAR) and a list of clickable sentences. -> Interaction: User clicks a sentence, then clicks the correct box ("SER" or "ESTAR"). JS logic checks the answer and provides instant feedback (color). -> Justification: Interactive practice of the hardest concept. -> Method: HTML/Tailwind/JS.
+- Vocab Duel Cards (Vocab Duel): Report Info: Spain vs. LatAm vocab. -> Goal: Compare. -> Viz: Grid of HTML cards. -> Interaction: On click, JS toggles a 'hidden' class on the "front" (English) and "back" (Spanish) of the card. -> Justification: Classic flashcard mechanic. -> Method: HTML/Tailwind/JS.
+- Mini-Quizzes (Study Zone): Report Info: Exam sections (Telling Time, Idioms, Articles). -> Goal: Inform (assess). -> Viz: Simple HTML forms (radio buttons, text inputs). -> Interaction: "Check Answers" button triggers a JS function to loop through answers, check them against a stored JS object, and display a score. -> Justification: Converts static exam questions into an interactive self-assessment. -> Method: HTML/Tailwind/JS.
+- Charts: No charts (Chart.js/Plotly.js) are used as the source material (a language guide) contains no quantitative data that would be enhanced by a chart. Large text stats and interactive quizzes are the most effective presentation methods. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Spanish Study Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #FAF7E6;
+            font-family: 'Inter', sans-serif;
+            color: #7D5A50;
+        }
+        h1, h2, h3 {
+            font-family: 'Merriweather', serif;
+            color: #7D5A50;
+        }
+        .nav-btn {
+            @apply px-4 py-2 rounded-lg font-semibold text-lg transition-all duration-300;
+        }
+        .nav-btn.active {
+            @apply bg-B4846C text-white;
+        }
+        .nav-btn:not(.active):hover {
+            @apply bg-E8D8C4;
+        }
+        .card {
+            @apply bg-E8D8C4 rounded-lg shadow-md p-6;
+        }
+        .table-container {
+            @apply overflow-x-auto bg-white rounded-lg shadow;
+        }
+        table {
+            @apply w-full text-left;
+        }
+        th {
+            @apply p-4 bg-7D5A50 text-white font-bold;
+        }
+        td {
+            @apply p-4 border-b border-E8D8C4;
+        }
+        tr:nth-child(even) {
+            @apply bg-FAF7E6;
+        }
+        .btn {
+            @apply px-5 py-2 rounded-lg bg-B4846C text-white font-semibold transition hover:bg-7D5A50;
+        }
+        .flip-card {
+            @apply h-40 w-full cursor-pointer;
+        }
+        .flip-card .card-front, .flip-card .card-back {
+            @apply absolute w-full h-full p-6 rounded-lg shadow-lg flex flex-col justify-center items-center transition-opacity duration-500;
+        }
+        .flip-card .card-front {
+            @apply bg-B4846C text-white;
+        }
+        .flip-card .card-back {
+            @apply bg-E8D8C4 opacity-0;
+        }
+        .flip-card.is-flipped .card-front {
+            @apply opacity-0;
+        }
+        .flip-card.is-flipped .card-back {
+            @apply opacity-100;
+        }
+        .quiz-question {
+            @apply mb-4 p-4 bg-white rounded-lg;
+        }
+        .quiz-feedback {
+            @apply p-2 rounded-md mt-2;
+        }
+        .correct {
+            @apply bg-green-100 border-green-400;
+        }
+        .incorrect {
+            @apply bg-red-100 border-red-400;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'FAF7E6': '#FAF7E6',
+                        'E8D8C4': '#E8D8C4',
+                        '7D5A50': '#7D5A50',
+                        'B4846C': '#B4846C',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="antialiased">
+
+    <!-- Header & Navigation -->
+    <header class="bg-E8D8C4 shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto max-w-6xl p-4 flex flex-col md:flex-row justify-between items-center">
+            <h1 class="text-3xl font-bold">🇪🇸 Spanish Study Hub</h1>
+            <div class="flex space-x-2 mt-4 md:mt-0">
+                <button id="nav-overview" class="nav-btn active" onclick="showSection('overview')">Overview</button>
+                <button id="nav-grammar" class="nav-btn" onclick="showSection('grammar')">Grammar Hub</button>
+                <button id="nav-vocab" class="nav-btn" onclick="showSection('vocab')">Vocab Duel</button>
+                <button id="nav-study" class="nav-btn" onclick="showSection('study')">Study Zone</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="container mx-auto max-w-6xl p-4 md:p-8">
+
+        <!-- Section 1: Overview -->
+        <section id="overview" class="section-content">
+            <h2 class="text-4xl font-bold mb-6">Units 1 & 2: Overview</h2>
+            <p class="text-xl mb-8">This hub covers the core concepts from the first two units. Here's what you're mastering:</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div class="card">
+                    <span class="text-6xl font-bold block text-7D5A50">2</span>
+                    <span class="text-xl font-semibold">Core Verbs</span>
+                    <span class="text-sm">(Ser & Estar)</span>
+                </div>
+                <div class="card">
+                    <span class="text-6xl font-bold block text-7D5A50">1</span>
+                    <span class="text-xl font-semibold">"Super" Verb</span>
+                    <span class="text-sm">(Tener)</span>
+                </div>
+                <div class="card">
+                    <span class="text-6xl font-bold block text-7D5A50">5+</span>
+                    <span class="text-xl font-semibold">Tener Idioms</span>
+                    <span class="text-sm">(Hambre, Frío, etc.)</span>
+                </div>
+                <div class="card">
+                    <span class="text-6xl font-bold block text-7D5A50">5+</span>
+                    <span class="text-xl font-semibold">Vocab Duels</span>
+                    <span class="text-sm">(Spain vs. LatAm)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Grammar Hub -->
+        <section id="grammar" class="section-content hidden">
+            <h2 class="text-4xl font-bold mb-6">Grammar Hub</h2>
+            
+            <!-- Verb Conjugations -->
+            <h3 class="text-2xl font-bold mb-4">Core Verb Conjugations</h3>
+            <div class="flex space-x-4 mb-4">
+                <button class="btn" onclick="toggleTable('table-ser')">Show/Hide SER</button>
+                <button class="btn" onclick="toggleTable('table-estar')">Show/Hide ESTAR</button>
+                <button class="btn" onclick="toggleTable('table-tener')">Show/Hide TENER</button>
+            </div>
+            <div id="table-ser" class="table-container hidden mb-6">
+                <table>
+                    <thead><tr><th colspan="2">SER (To Be - Identity, DOCTOR)</th></tr></thead>
+                    <tbody>
+                        <tr><td>Yo</td><td><b>soy</b> (I am)</td></tr>
+                        <tr><td>Tú</td><td><b>eres</b> (You are)</td></tr>
+                        <tr><td>Él/Ella</td><td><b>es</b> (He/She is)</td></tr>
+                        <tr><td>Nosotros</td><td><b>somos</b> (We are)</td></tr>
+                        <tr><td>Vosotros</td><td><b>sois</b> (You guys are - Spain)</td></tr>
+                        <tr><td>Ellos</td><td><b>son</b> (They are)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="table-estar" class="table-container hidden mb-6">
+                <table>
+                    <thead><tr><th colspan="2">ESTAR (To Be - Status, PLACE)</th></tr></thead>
+                    <tbody>
+                        <tr><td>Yo</td><td><b>estoy</b> (I am)</td></tr>
+                        <tr><td>Tú</td><td><b>estás</b> (You are)</td></tr>
+                        <tr><td>Él/Ella</td><td><b>está</b> (He/She is)</td></tr>
+                        <tr><td>Nosotros</td><td><b>estamos</b> (We are)</td></tr>
+                        <tr><td>Ellos</td><td><b>están</b> (They are)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="table-tener" class="table-container hidden mb-6">
+                <table>
+                    <thead><tr><th colspan="2">TENER (To Have)</th></tr></thead>
+                    <tbody>
+                        <tr><td>Yo</td><td><b>Tengo</b> (I have)</td></tr>
+                        <tr><td>Tú</td><td><b>Tienes</b> (You have)</td></tr>
+                        <tr><td>Él/Ella</td><td><b>Tiene</b> (He/She has)</td></tr>
+                        <tr><td>Nosotros</td><td><b>Tenemos</b> (We have)</td></tr>
+                        <tr><td>Ellos</td><td><b>Tienen</b> (They have)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Ser vs. Estar Quiz -->
+            <h3 class="text-2xl font-bold mb-4 mt-10">Interactive Quiz: SER or ESTAR?</h3>
+            <p class="mb-4">Click a sentence from the list, then click the correct verb box ("SER" or "ESTAR") to assign it. Can you sort them all?</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-1">
+                    <h4 class="text-xl font-bold mb-2 text-center">Sentence Bank</h4>
+                    <div id="sentence-bank" class="space-y-2">
+                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="ser" onclick="selectSentence(this)">"Él ___ aburrido." (He IS a boring person)</div>
+                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="estar" onclick="selectSentence(this)">"Él ___ aburrido." (He IS bored right now)</div>
+                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="ser" onclick="selectSentence(this)">"Yo ___ de Londres." (Origin)</div>
+                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="estar" onclick="selectSentence(this)">"Yo ___ en Londres." (Location)</div>
+                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="ser" onclick="selectSentence(this)">"Ella ___ mi hermana." (Relationship)</div>
+                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="estar" onclick="selectSentence(this)">"Ella ___ feliz hoy." (Emotion)</div>
+                    </div>
+                </div>
+                <div class="card bg-blue-100 cursor-pointer" id="ser-box" onclick="checkSerEstar('ser')">
+                    <h4 class="text-2xl font-bold text-center text-blue-800">SER (Identity/DOCTOR)</h4>
+                    <div id="ser-list" class="mt-4 space-y-2"></div>
+                </div>
+                <div class="card bg-green-100 cursor-pointer" id="estar-box" onclick="checkSerEstar('estar')">
+                    <h4 class="text-2xl font-bold text-center text-green-800">ESTAR (Status/PLACE)</h4>
+                    <div id="estar-list" class="mt-4 space-y-2"></div>
+                </div>
+            </div>
+            <p id="quiz-feedback" class="text-center font-semibold mt-4"></p>
+        </section>
+
+        <!-- Section 3: Vocab Duel -->
+        <section id="vocab" class="section-content hidden">
+            <h2 class="text-4xl font-bold mb-6">Vocab Duel: 🇪🇸 Spain vs. 🌎 LatAm</h2>
+            <p class="text-xl mb-8">Click on a card to "flip" it and see the regional differences.</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="flip-card" onclick="flipCard(this)">
+                    <div class="card-front"><h3 class="text-2xl font-bold">The Pen</h3></div>
+                    <div class="card-back">
+                        <h4 class="font-bold">🇪🇸 Spain: <span class="font-normal">El Bolígrafo</span></h4>
+                        <h4 class="font-bold">🌎 LatAm: <span class="font-normal">La Pluma</span></h4>
+                    </div>
+                </div>
+                <div class="flip-card" onclick="flipCard(this)">
+                    <div class="card-front"><h3 class="text-2xl font-bold">The Computer</h3></div>
+                    <div class="card-back">
+                        <h4 class="font-bold">🇪🇸 Spain: <span class="font-normal">El Ordenador</span></h4>
+                        <h4 class="font-bold">🌎 LatAm: <span class="font-normal">La Computadora</span></h4>
+                    </div>
+                </div>
+                <div class="flip-card" onclick="flipCard(this)">
+                    <div class="card-front"><h3 class="text-2xl font-bold">To Grab / Take</h3></div>
+                    <div class="card-back">
+                        <h4 class="font-bold">🇪🇸 Spain: <span class="font-normal">Coger (Safe!)</span></h4>
+                        <h4 class="font-bold">🌎 LatAm: <span class="font-normal">Tomar (Safe!)</span></h4>
+                        <p class="text-sm mt-2">⚠️ *'Coger' is a bad word in some LatAm countries!*</p>
+                    </div>
+                </div>
+                <div class="flip-card" onclick="flipCard(this)">
+                    <div class="card-front"><h3 class="text-2xl font-bold">"You Guys"</h3></div>
+                    <div class="card-back">
+                        <h4 class="font-bold">🇪🇸 Spain: <span class="font-normal">Vosotros</span></h4>
+                        <h4 class="font-bold">🌎 LatAm: <span class="font-normal">Ustedes</span></h4>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Study Zone -->
+        <section id="study" class="section-content hidden">
+            <h2 class="text-4xl font-bold mb-6">Study Zone</h2>
+            <p class="text-xl mb-8">Test your knowledge with these mini-quizzes based on the exam!</p>
+            
+            <div id="quiz-container">
+                <!-- Quiz 1: Tener Idioms -->
+                <h3 class="text-2xl font-bold mb-4">Quiz 1: "Tener" Idioms</h3>
+                <div class="quiz-question">
+                    <label class="font-semibold">"Tengo hambre" means...</label>
+                    <div class="mt-2 space-y-1">
+                        <div><input type="radio" name="q1" value="a"> I am hot</div>
+                        <div><input type="radio" name="q1" value="b"> I am hungry</div>
+                        <div><input type="radio" name="q1" value="c"> I am scared</div>
+                    </div>
+                    <div class="quiz-feedback hidden"></div>
+                </div>
+                <div class="quiz-question">
+                    <label class="font-semibold">How do you say "I am cold" in Spanish?</label>
+                    <div class="mt-2 space-y-1">
+                        <div><input type="radio" name="q2" value="a"> Tengo frío</div>
+                        <div><input type="radio" name="q2" value="b"> Soy frío</div>
+                        <div><input type="radio" name="q2" value="c"> Estoy frío</div>
+                    </div>
+                    <div class="quiz-feedback hidden"></div>
+                </div>
+
+                <!-- Quiz 2: Articles -->
+                <h3 class="text-2xl font-bold mb-4 mt-10">Quiz 2: Tricky Articles</h3>
+                <div class="quiz-question">
+                    <label class="font-semibold">What is the correct article for "problema"?</label>
+                    <div class="mt-2 space-y-1">
+                        <div><input type="radio" name="q3" value="a"> La</div>
+                        <div><input type="radio" name="q3" value="b"> El</div>
+                        <div><input type="radio" name="q3" value="c"> Las</div>
+                    </div>
+                    <div class="quiz-feedback hidden"></div>
+                </div>
+
+                <!-- Quiz 3: Telling Time -->
+                <h3 class="text-2xl font-bold mb-4 mt-10">Quiz 3: Telling Time</h3>
+                <div class="quiz-question">
+                    <label class="font-semibold" for="q4">How do you write "1:00" in Spanish?</label>
+                    <input type="text" id="q4" class="w-full p-2 border border-gray-300 rounded mt-2" placeholder="Type your answer...">
+                    <div class="quiz-feedback hidden"></div>
+                </div>
+                <div class="quiz-question">
+                    <label class="font-semibold" for="q5">How do you write "3:30" in Spanish?</label>
+                    <input type="text" id="q5" class="w-full p-2 border border-gray-300 rounded mt-2" placeholder="Type your answer...">
+                    <div class="quiz-feedback hidden"></div>
+                </div>
+
+                <button class="btn text-xl mt-6" onclick="checkStudyQuiz()">Check My Answers!</button>
+                <div id="quiz-results" class="text-2xl font-bold mt-4"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        let selectedSentence = null;
+        const navButtons = {};
+        const sections = {};
+
+        const quizAnswers = {
+            q1: 'b',
+            q2: 'a',
+            q3: 'b',
+            q4: 'es la una',
+            q5: 'son las tres y media'
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const navIds = ['overview', 'grammar', 'vocab', 'study'];
+            navIds.forEach(id => {
+                navButtons[id] = document.getElementById(`nav-${id}`);
+                sections[id] = document.getElementById(id);
+            });
+        });
+
+        function showSection(sectionId) {
+            Object.keys(sections).forEach(id => {
+                sections[id].classList.add('hidden');
+                navButtons[id].classList.remove('active');
+            });
+            sections[sectionId].classList.remove('hidden');
+            navButtons[sectionId].classList.add('active');
+        }
+
+        function toggleTable(tableId) {
+            document.getElementById(tableId).classList.toggle('hidden');
+        }
+
+        function flipCard(cardElement) {
+            cardElement.classList.toggle('is-flipped');
+        }
+
+        function selectSentence(el) {
+            if (selectedSentence) {
+                selectedSentence.style.border = 'none';
+            }
+            selectedSentence = el;
+            selectedSentence.style.border = '3px solid #B4846C';
+            document.getElementById('quiz-feedback').innerText = `Selected: "${el.innerText}". Now click the correct verb box.`;
+        }
+
+        function checkSerEstar(verbChoice) {
+            const feedback = document.getElementById('quiz-feedback');
+            if (!selectedSentence) {
+                feedback.innerText = "Please select a sentence first!";
+                feedback.style.color = 'red';
+                return;
+            }
+
+            const isCorrect = selectedSentence.dataset.answer === verbChoice;
+            
+            if (isCorrect) {
+                const targetList = document.getElementById(`${verbChoice}-list`);
+                selectedSentence.style.border = '2px solid green';
+                selectedSentence.onclick = null; // Disable clicking
+                targetList.appendChild(selectedSentence);
+                feedback.innerText = "Correcto! (Correct!)";
+                feedback.style.color = 'green';
+            } else {
+                selectedSentence.style.border = '2px solid red';
+                feedback.innerText = "Incorrecto! (Incorrect!) Try again.";
+                feedback.style.color = 'red';
+            }
+            selectedSentence = null;
+        }
+
+        function checkStudyQuiz() {
+            let score = 0;
+            let total = 0;
+
+            // Q1
+            total++;
+            const q1 = document.querySelector('input[name="q1"]:checked');
+            const q1Feedback = q1.parentElement.parentElement.nextElementSibling;
+            if (q1 && q1.value === quizAnswers.q1) {
+                score++;
+                q1Feedback.innerText = "Correct! 'Tengo hambre' means 'I am hungry'.";
+                q1Feedback.className = 'quiz-feedback correct';
+            } else {
+                q1Feedback.innerText = "Incorrect. The correct answer is 'I am hungry'.";
+                q1Feedback.className = 'quiz-feedback incorrect';
+            }
+
+            // Q2
+            total++;
+            const q2 = document.querySelector('input[name="q2"]:checked');
+            const q2Feedback = q2.parentElement.parentElement.nextElementSibling;
+            if (q2 && q2.value === quizAnswers.q2) {
+                score++;
+                q2Feedback.innerText = "Correct! 'Tengo frío' is used for 'I am cold'.";
+                q2Feedback.className = 'quiz-feedback correct';
+            } else {
+                q2Feedback.innerText = "Incorrect. We use TENER for 'to be cold', so 'Tengo frío'.";
+                q2Feedback.className = 'quiz-feedback incorrect';
+            }
+
+            // Q3
+            total++;
+            const q3 = document.querySelector('input[name="q3"]:checked');
+            const q3Feedback = q3.parentElement.parentElement.nextElementSibling;
+            if (q3 && q3.value === quizAnswers.q3) {
+                score++;
+                q3Feedback.innerText = "Correct! Words ending in -MA are often masculine, so 'El problema'.";
+                q3Feedback.className = 'quiz-feedback correct';
+            } else {
+                q3Feedback.innerText = "Incorrect. This is a trick question! 'El problema' is correct.";
+                q3Feedback.className = 'quiz-feedback incorrect';
+            }
+
+            // Q4
+            total++;
+            const q4 = document.getElementById('q4');
+            const q4Feedback = q4.nextElementSibling;
+            if (q4.value.trim().toLowerCase() === quizAnswers.q4) {
+                score++;
+                q4Feedback.innerText = "Correct! 'Es la una'.";
+                q4Feedback.className = 'quiz-feedback correct';
+            } else {
+                q4Feedback.innerText = "Incorrect. The correct answer is 'Es la una' (we use 'Es' for 1:00).";
+                q4Feedback.className = 'quiz-feedback incorrect';
+            }
+
+            // Q5
+            total++;
+            const q5 = document.getElementById('q5');
+            const q5Feedback = q5.nextElementSibling;
+            if (q5.value.trim().toLowerCase().includes(quizAnswers.q5)) {
+                score++;
+                q5Feedback.innerText = "Correct! 'Son las tres y media' (or 'y treinta').";
+                q5Feedback.className = 'quiz-feedback correct';
+            } else {
+                q5Feedback.innerText = "Incorrect. The correct answer is 'Son las tres y media'.";
+                q5Feedback.className = 'quiz-feedback incorrect';
+            }
+
+            // Display final score
+            const results = document.getElementById('quiz-results');
+            results.innerText = `Your Score: ${score} / ${total}`;
+            if (score === total) {
+                results.style.color = 'green';
+            } else {
+                results.style.color = '#7D5A50';
+            }
+        }
+
+    </script>
+</body>
+</html>
