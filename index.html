@@ -1,12 +1,23 @@
-<!-- Chosen Palette: Warm & Focused (#FAF7E6, #E8D8C4, #7D5A50, #B4846C) -->
-<!-- Application Structure Plan: A tabbed dashboard SPA. Nav: [Overview, Grammar Hub, Vocab Duel, Study Zone]. Overview: Key stats from the course (2 Units, 3 Verbs, 5 Idioms, etc.) using large text. Grammar Hub: Interactive toggles for SER, ESTAR, TENER conjugation tables. An interactive "Ser vs. Estar" quiz where users click sentences to assign them to the correct verb. Vocab Duel: A grid of cards (Pen, Computer, etc.) that 'flip' on click to reveal the Spain vs. LatAm Spanish words. Study Zone: A set of mini-quizzes (MCQ, Fill-in-the-blank) based on the exam content (Telling Time, Interrogatives, Idioms). This structure transforms the static guide/exam into an active, non-linear learning experience, which is more usable and engaging for a student. -->
-<!-- Visualization & Content Choices: 
-- Overview Stats (Home): Report Info: 2 Units, 3 Verbs, 5+ Idioms, 5+ Vocab Duels. -> Goal: Inform. -> Viz: Dynamic Stats (Large HTML text). -> Interaction: None. -> Justification: Quick, high-impact summary. -> Method: HTML/Tailwind.
-- Verb Conjugations (Grammar Hub): Report Info: SER, ESTAR, TENER tables. -> Goal: Organize. -> Viz: HTML Tables. -> Interaction: Tables are hidden. Clickable buttons toggle visibility (JS). -> Justification: Prevents overwhelming user. Active reveal aids memory. -> Method: HTML/Tailwind/JS.
-- Ser vs. Estar Quiz (Grammar Hub): Report Info: "Danger Zone" sentences. -> Goal: Organize/Compare. -> Viz: Two columns (SER, ESTAR) and a list of clickable sentences. -> Interaction: User clicks a sentence, then clicks the correct box ("SER" or "ESTAR"). JS logic checks the answer and provides instant feedback (color). -> Justification: Interactive practice of the hardest concept. -> Method: HTML/Tailwind/JS.
-- Vocab Duel Cards (Vocab Duel): Report Info: Spain vs. LatAm vocab. -> Goal: Compare. -> Viz: Grid of HTML cards. -> Interaction: On click, JS toggles a 'hidden' class on the "front" (English) and "back" (Spanish) of the card. -> Justification: Classic flashcard mechanic. -> Method: HTML/Tailwind/JS.
-- Mini-Quizzes (Study Zone): Report Info: Exam sections (Telling Time, Idioms, Articles). -> Goal: Inform (assess). -> Viz: Simple HTML forms (radio buttons, text inputs). -> Interaction: "Check Answers" button triggers a JS function to loop through answers, check them against a stored JS object, and display a score. -> Justification: Converts static exam questions into an interactive self-assessment. -> Method: HTML/Tailwind/JS.
-- Charts: No charts (Chart.js/Plotly.js) are used as the source material (a language guide) contains no quantitative data that would be enhanced by a chart. Large text stats and interactive quizzes are the most effective presentation methods. -->
+<!-- Chosen Palette: Fiesta Vibrance (#C90016 Spain Red, #FFD700 Gold, #009B77 LatAm Teal, #FF8F00 Orange, #FFFFFF) -->
+<!-- Application Structure Plan: 
+    1. Dashboard: "Mi Clase" overview. Visual progress tracker (Chart.js). Quick Links. Daily Phrase.
+    2. Grammar Lab (La Laboratorio): Deep dive tabs.
+       - Pronouns: The "Grid" (Yo, Tú...) with visual grouping.
+       - The Big Three: Ser, Estar, Tener full conjugation tables with examples.
+       - Ser vs Estar: Interactive "DOCTOR vs PLACE" explorer + sorting game.
+       - Articles: Gender rules visualizer + "Sorting Hat" game.
+    3. Vocab Fiesta (Vocabulario): Flip cards with images (Emojis/Icons). Filters for School, Idioms, Regional, Time.
+    4. Culture Lounge (Cultura): Cards explaining the "Z" sound, Greetings, and "The Danger Words" (Coger/Tomar).
+    5. Time Machine (La Hora): Interactive clock explainer + quiz.
+    6. Exam Hall (El Examen): Full 75-mark digitized exam. Auto-grading for Sections A, B, C. Model answers for D, E.
+-->
+<!-- Visualization & Content Choices:
+    - Dashboard Chart: Report Info: Mastery of Grammar, Vocab, Culture, Time. -> Goal: Motivate. -> Viz: Polar Area Chart. -> Interaction: Hover. -> Justification: Engaging visual summary. -> Method: Chart.js.
+    - DOCTOR vs PLACE (Grammar): Report Info: Rules for Ser/Estar usage. -> Goal: Inform/Organize. -> Viz: Interactive Accordion/Cards. -> Interaction: Click to reveal examples. -> Justification: Breaks down complex mnemonic. -> Method: HTML/JS.
+    - Vocab Cards (Vocab): Report Info: Word lists. -> Goal: Compare. -> Viz: Grid of styled cards with large Emojis. -> Interaction: Flip animation. -> Justification: Visual association aids memory. -> Method: HTML/Tailwind/JS.
+    - Clock Quiz (Time): Report Info: Telling time rules. -> Goal: Practice. -> Viz: Digital Clock Display. -> Interaction: Input validation. -> Justification: Immediate feedback loop. -> Method: HTML/JS.
+    - Full Exam (Exam): Report Info: 75-mark paper. -> Goal: Assess. -> Viz: Structured Form. -> Interaction: Score calculation + Result breakdown. -> Justification: Realistic practice. -> Method: HTML/JS.
+-->
 <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
 <!DOCTYPE html>
@@ -14,464 +25,599 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Spanish Study Hub</title>
+    <title>Spanish with Mr Guevara</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body {
-            background-color: #FAF7E6;
-            font-family: 'Inter', sans-serif;
-            color: #7D5A50;
+        body { 
+            background-color: #FFFBEB; 
+            font-family: 'Nunito', sans-serif; 
+            color: #4B1D3F;
+            background-image: radial-gradient(#FFD700 1px, transparent 1px);
+            background-size: 20px 20px;
         }
-        h1, h2, h3 {
-            font-family: 'Merriweather', serif;
-            color: #7D5A50;
+        h1, h2, h3, h4 { font-family: 'Fredoka', sans-serif; }
+        
+        /* Custom Colors */
+        .bg-spain-red { background-color: #C90016; }
+        .text-spain-red { color: #C90016; }
+        .bg-latam-teal { background-color: #009B77; }
+        .text-latam-teal { color: #009B77; }
+        .bg-gold { background-color: #FFD700; }
+        .bg-orange { background-color: #FF8F00; }
+        
+        /* Navigation */
+        .nav-item { transition: all 0.3s ease; }
+        .nav-item.active { background-color: #C90016; color: white; transform: scale(1.05); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .nav-item:hover:not(.active) { background-color: #FFE4E6; color: #C90016; }
+
+        /* Cards */
+        .fun-card { 
+            background: white; 
+            border-radius: 1rem; 
+            border-bottom: 6px solid #E5E7EB;
+            transition: transform 0.2s;
         }
-        .nav-btn {
-            @apply px-4 py-2 rounded-lg font-semibold text-lg transition-all duration-300;
-        }
-        .nav-btn.active {
-            @apply bg-B4846C text-white;
-        }
-        .nav-btn:not(.active):hover {
-            @apply bg-E8D8C4;
-        }
-        .card {
-            @apply bg-E8D8C4 rounded-lg shadow-md p-6;
-        }
-        .table-container {
-            @apply overflow-x-auto bg-white rounded-lg shadow;
-        }
-        table {
-            @apply w-full text-left;
-        }
-        th {
-            @apply p-4 bg-7D5A50 text-white font-bold;
-        }
-        td {
-            @apply p-4 border-b border-E8D8C4;
-        }
-        tr:nth-child(even) {
-            @apply bg-FAF7E6;
-        }
-        .btn {
-            @apply px-5 py-2 rounded-lg bg-B4846C text-white font-semibold transition hover:bg-7D5A50;
-        }
-        .flip-card {
-            @apply h-40 w-full cursor-pointer;
-        }
-        .flip-card .card-front, .flip-card .card-back {
-            @apply absolute w-full h-full p-6 rounded-lg shadow-lg flex flex-col justify-center items-center transition-opacity duration-500;
-        }
-        .flip-card .card-front {
-            @apply bg-B4846C text-white;
-        }
-        .flip-card .card-back {
-            @apply bg-E8D8C4 opacity-0;
-        }
-        .flip-card.is-flipped .card-front {
-            @apply opacity-0;
-        }
-        .flip-card.is-flipped .card-back {
-            @apply opacity-100;
-        }
-        .quiz-question {
-            @apply mb-4 p-4 bg-white rounded-lg;
-        }
-        .quiz-feedback {
-            @apply p-2 rounded-md mt-2;
-        }
-        .correct {
-            @apply bg-green-100 border-green-400;
-        }
-        .incorrect {
-            @apply bg-red-100 border-red-400;
+        .fun-card:hover { transform: translateY(-4px); }
+        .fun-card.red-border { border-bottom-color: #C90016; }
+        .fun-card.teal-border { border-bottom-color: #009B77; }
+        .fun-card.gold-border { border-bottom-color: #FFD700; }
+
+        /* Flip Cards */
+        .flip-card { perspective: 1000px; height: 220px; cursor: pointer; }
+        .flip-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
+        .flip-card.flipped .flip-inner { transform: rotateY(180deg); }
+        .flip-front, .flip-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 1rem; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .flip-front { background: linear-gradient(135deg, #C90016, #FF4D4D); color: white; }
+        .flip-back { background: white; color: #4B1D3F; transform: rotateY(180deg); border: 4px solid #C90016; }
+
+        /* Buttons */
+        .btn-action { @apply px-6 py-2 rounded-full font-bold text-white shadow-lg transition transform active:scale-95; }
+        .btn-red { background-color: #C90016; }
+        .btn-teal { background-color: #009B77; }
+
+        /* Chart Container */
+        .chart-wrapper { position: relative; height: 300px; width: 100%; max-width: 500px; margin: 0 auto; }
+        
+        /* Patterns */
+        .pattern-header {
+            background-color: #C90016;
+            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fbbf24' fill-opacity='0.4' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
         }
     </style>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        'FAF7E6': '#FAF7E6',
-                        'E8D8C4': '#E8D8C4',
-                        '7D5A50': '#7D5A50',
-                        'B4846C': '#B4846C',
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                        display: ['Fredoka', 'cursive'],
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="antialiased">
+<body class="min-h-screen flex flex-col">
 
-    <!-- Header & Navigation -->
-    <header class="bg-E8D8C4 shadow-md sticky top-0 z-50">
-        <nav class="container mx-auto max-w-6xl p-4 flex flex-col md:flex-row justify-between items-center">
-            <h1 class="text-3xl font-bold">🇪🇸 Spanish Study Hub</h1>
-            <div class="flex space-x-2 mt-4 md:mt-0">
-                <button id="nav-overview" class="nav-btn active" onclick="showSection('overview')">Overview</button>
-                <button id="nav-grammar" class="nav-btn" onclick="showSection('grammar')">Grammar Hub</button>
-                <button id="nav-vocab" class="nav-btn" onclick="showSection('vocab')">Vocab Duel</button>
-                <button id="nav-study" class="nav-btn" onclick="showSection('study')">Study Zone</button>
+    <!-- Header -->
+    <header class="pattern-header text-white shadow-xl sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-white text-spain-red p-2 rounded-full h-10 w-10 flex items-center justify-center font-bold text-xl border-2 border-yellow-400">G</div>
+                <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Spanish <span class="text-yellow-300 font-normal text-lg">with Mr Guevara</span></h1>
             </div>
-        </nav>
+            
+            <!-- Desktop Nav -->
+            <nav class="hidden md:flex gap-2 bg-white/10 p-1 rounded-full backdrop-blur-sm">
+                <button onclick="nav('dashboard')" id="btn-dashboard" class="nav-item active px-4 py-1 rounded-full text-sm font-bold">Dashboard</button>
+                <button onclick="nav('grammar')" id="btn-grammar" class="nav-item px-4 py-1 rounded-full text-sm font-bold">Grammar Lab</button>
+                <button onclick="nav('vocab')" id="btn-vocab" class="nav-item px-4 py-1 rounded-full text-sm font-bold">Vocab Fiesta</button>
+                <button onclick="nav('culture')" id="btn-culture" class="nav-item px-4 py-1 rounded-full text-sm font-bold">Culture</button>
+                <button onclick="nav('exam')" id="btn-exam" class="nav-item px-4 py-1 rounded-full text-sm font-bold bg-yellow-400 text-red-900 hover:bg-yellow-300">Examen</button>
+            </nav>
+
+            <!-- Mobile Menu Toggle -->
+            <button class="md:hidden text-white text-2xl" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"><i class="fas fa-bars"></i></button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-red-900 text-white p-4 space-y-2">
+            <a onclick="nav('dashboard')" class="block py-2 border-b border-red-800">Dashboard</a>
+            <a onclick="nav('grammar')" class="block py-2 border-b border-red-800">Grammar Lab</a>
+            <a onclick="nav('vocab')" class="block py-2 border-b border-red-800">Vocab Fiesta</a>
+            <a onclick="nav('culture')" class="block py-2 border-b border-red-800">Culture Lounge</a>
+            <a onclick="nav('exam')" class="block py-2 font-bold text-yellow-400">Exam Simulator</a>
+        </div>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="container mx-auto max-w-6xl p-4 md:p-8">
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-6 max-w-6xl">
 
-        <!-- Section 1: Overview -->
-        <section id="overview" class="section-content">
-            <h2 class="text-4xl font-bold mb-6">Units 1 & 2: Overview</h2>
-            <p class="text-xl mb-8">This hub covers the core concepts from the first two units. Here's what you're mastering:</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                <div class="card">
-                    <span class="text-6xl font-bold block text-7D5A50">2</span>
-                    <span class="text-xl font-semibold">Core Verbs</span>
-                    <span class="text-sm">(Ser & Estar)</span>
-                </div>
-                <div class="card">
-                    <span class="text-6xl font-bold block text-7D5A50">1</span>
-                    <span class="text-xl font-semibold">"Super" Verb</span>
-                    <span class="text-sm">(Tener)</span>
-                </div>
-                <div class="card">
-                    <span class="text-6xl font-bold block text-7D5A50">5+</span>
-                    <span class="text-xl font-semibold">Tener Idioms</span>
-                    <span class="text-sm">(Hambre, Frío, etc.)</span>
-                </div>
-                <div class="card">
-                    <span class="text-6xl font-bold block text-7D5A50">5+</span>
-                    <span class="text-xl font-semibold">Vocab Duels</span>
-                    <span class="text-sm">(Spain vs. LatAm)</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 2: Grammar Hub -->
-        <section id="grammar" class="section-content hidden">
-            <h2 class="text-4xl font-bold mb-6">Grammar Hub</h2>
-            
-            <!-- Verb Conjugations -->
-            <h3 class="text-2xl font-bold mb-4">Core Verb Conjugations</h3>
-            <div class="flex space-x-4 mb-4">
-                <button class="btn" onclick="toggleTable('table-ser')">Show/Hide SER</button>
-                <button class="btn" onclick="toggleTable('table-estar')">Show/Hide ESTAR</button>
-                <button class="btn" onclick="toggleTable('table-tener')">Show/Hide TENER</button>
-            </div>
-            <div id="table-ser" class="table-container hidden mb-6">
-                <table>
-                    <thead><tr><th colspan="2">SER (To Be - Identity, DOCTOR)</th></tr></thead>
-                    <tbody>
-                        <tr><td>Yo</td><td><b>soy</b> (I am)</td></tr>
-                        <tr><td>Tú</td><td><b>eres</b> (You are)</td></tr>
-                        <tr><td>Él/Ella</td><td><b>es</b> (He/She is)</td></tr>
-                        <tr><td>Nosotros</td><td><b>somos</b> (We are)</td></tr>
-                        <tr><td>Vosotros</td><td><b>sois</b> (You guys are - Spain)</td></tr>
-                        <tr><td>Ellos</td><td><b>son</b> (They are)</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div id="table-estar" class="table-container hidden mb-6">
-                <table>
-                    <thead><tr><th colspan="2">ESTAR (To Be - Status, PLACE)</th></tr></thead>
-                    <tbody>
-                        <tr><td>Yo</td><td><b>estoy</b> (I am)</td></tr>
-                        <tr><td>Tú</td><td><b>estás</b> (You are)</td></tr>
-                        <tr><td>Él/Ella</td><td><b>está</b> (He/She is)</td></tr>
-                        <tr><td>Nosotros</td><td><b>estamos</b> (We are)</td></tr>
-                        <tr><td>Ellos</td><td><b>están</b> (They are)</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div id="table-tener" class="table-container hidden mb-6">
-                <table>
-                    <thead><tr><th colspan="2">TENER (To Have)</th></tr></thead>
-                    <tbody>
-                        <tr><td>Yo</td><td><b>Tengo</b> (I have)</td></tr>
-                        <tr><td>Tú</td><td><b>Tienes</b> (You have)</td></tr>
-                        <tr><td>Él/Ella</td><td><b>Tiene</b> (He/She has)</td></tr>
-                        <tr><td>Nosotros</td><td><b>Tenemos</b> (We have)</td></tr>
-                        <tr><td>Ellos</td><td><b>Tienen</b> (They have)</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Ser vs. Estar Quiz -->
-            <h3 class="text-2xl font-bold mb-4 mt-10">Interactive Quiz: SER or ESTAR?</h3>
-            <p class="mb-4">Click a sentence from the list, then click the correct verb box ("SER" or "ESTAR") to assign it. Can you sort them all?</p>
+        <!-- DASHBOARD VIEW -->
+        <section id="dashboard" class="view-section">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="md:col-span-1">
-                    <h4 class="text-xl font-bold mb-2 text-center">Sentence Bank</h4>
-                    <div id="sentence-bank" class="space-y-2">
-                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="ser" onclick="selectSentence(this)">"Él ___ aburrido." (He IS a boring person)</div>
-                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="estar" onclick="selectSentence(this)">"Él ___ aburrido." (He IS bored right now)</div>
-                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="ser" onclick="selectSentence(this)">"Yo ___ de Londres." (Origin)</div>
-                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="estar" onclick="selectSentence(this)">"Yo ___ en Londres." (Location)</div>
-                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="ser" onclick="selectSentence(this)">"Ella ___ mi hermana." (Relationship)</div>
-                        <div class="p-3 bg-white rounded shadow cursor-pointer hover:bg-gray-100" data-answer="estar" onclick="selectSentence(this)">"Ella ___ feliz hoy." (Emotion)</div>
+                <!-- Welcome Card -->
+                <div class="md:col-span-2 fun-card red-border p-6 bg-gradient-to-r from-white to-red-50">
+                    <h2 class="text-3xl font-bold mb-2 text-spain-red">¡Hola, Estudiante! 👋</h2>
+                    <p class="text-gray-600 mb-4">Ready to crush Internal Exam Quick Practice? You have <span class="font-bold text-latam-teal">75 Marks</span> to earn.</p>
+                    <div class="flex gap-3 mt-4">
+                        <button onclick="nav('grammar')" class="btn-action btn-red"><i class="fas fa-book mr-2"></i> Study Grammar</button>
+                        <button onclick="nav('exam')" class="btn-action btn-teal"><i class="fas fa-pencil-alt mr-2"></i> Take Exam</button>
                     </div>
                 </div>
-                <div class="card bg-blue-100 cursor-pointer" id="ser-box" onclick="checkSerEstar('ser')">
-                    <h4 class="text-2xl font-bold text-center text-blue-800">SER (Identity/DOCTOR)</h4>
-                    <div id="ser-list" class="mt-4 space-y-2"></div>
-                </div>
-                <div class="card bg-green-100 cursor-pointer" id="estar-box" onclick="checkSerEstar('estar')">
-                    <h4 class="text-2xl font-bold text-center text-green-800">ESTAR (Status/PLACE)</h4>
-                    <div id="estar-list" class="mt-4 space-y-2"></div>
-                </div>
-            </div>
-            <p id="quiz-feedback" class="text-center font-semibold mt-4"></p>
-        </section>
 
-        <!-- Section 3: Vocab Duel -->
-        <section id="vocab" class="section-content hidden">
-            <h2 class="text-4xl font-bold mb-6">Vocab Duel: 🇪🇸 Spain vs. 🌎 LatAm</h2>
-            <p class="text-xl mb-8">Click on a card to "flip" it and see the regional differences.</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div class="flip-card" onclick="flipCard(this)">
-                    <div class="card-front"><h3 class="text-2xl font-bold">The Pen</h3></div>
-                    <div class="card-back">
-                        <h4 class="font-bold">🇪🇸 Spain: <span class="font-normal">El Bolígrafo</span></h4>
-                        <h4 class="font-bold">🌎 LatAm: <span class="font-normal">La Pluma</span></h4>
+                <!-- Daily Phrase -->
+                <div class="fun-card gold-border p-6 bg-yellow-50 text-center">
+                    <h3 class="text-sm uppercase tracking-widest text-yellow-700 font-bold mb-2">Daily Phrase</h3>
+                    <div class="text-4xl mb-2">🥶</div>
+                    <p class="text-2xl font-bold text-gray-800">"Tengo frío"</p>
+                    <p class="text-sm text-gray-500 italic">(I am cold)</p>
+                    <p class="text-xs mt-2 text-red-500 font-bold">*Not "Soy frío"!</p>
+                </div>
+
+                <!-- Progress Chart -->
+                <div class="fun-card teal-border p-6 flex flex-col items-center">
+                    <h3 class="font-bold text-gray-700 mb-2">Mastery Level</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="masteryChart"></canvas>
                     </div>
                 </div>
-                <div class="flip-card" onclick="flipCard(this)">
-                    <div class="card-front"><h3 class="text-2xl font-bold">The Computer</h3></div>
-                    <div class="card-back">
-                        <h4 class="font-bold">🇪🇸 Spain: <span class="font-normal">El Ordenador</span></h4>
-                        <h4 class="font-bold">🌎 LatAm: <span class="font-normal">La Computadora</span></h4>
+
+                <!-- Quick Stats Grid -->
+                <div class="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="fun-card p-4 text-center border-l-4 border-spain-red">
+                        <div class="text-3xl font-black text-spain-red">2</div>
+                        <div class="text-xs uppercase font-bold text-gray-400">Units</div>
                     </div>
-                </div>
-                <div class="flip-card" onclick="flipCard(this)">
-                    <div class="card-front"><h3 class="text-2xl font-bold">To Grab / Take</h3></div>
-                    <div class="card-back">
-                        <h4 class="font-bold">🇪🇸 Spain: <span class="font-normal">Coger (Safe!)</span></h4>
-                        <h4 class="font-bold">🌎 LatAm: <span class="font-normal">Tomar (Safe!)</span></h4>
-                        <p class="text-sm mt-2">⚠️ *'Coger' is a bad word in some LatAm countries!*</p>
+                    <div class="fun-card p-4 text-center border-l-4 border-latam-teal">
+                        <div class="text-3xl font-black text-latam-teal">5</div>
+                        <div class="text-xs uppercase font-bold text-gray-400">Idioms</div>
                     </div>
-                </div>
-                <div class="flip-card" onclick="flipCard(this)">
-                    <div class="card-front"><h3 class="text-2xl font-bold">"You Guys"</h3></div>
-                    <div class="card-back">
-                        <h4 class="font-bold">🇪🇸 Spain: <span class="font-normal">Vosotros</span></h4>
-                        <h4 class="font-bold">🌎 LatAm: <span class="font-normal">Ustedes</span></h4>
+                    <div class="fun-card p-4 text-center border-l-4 border-yellow-400">
+                        <div class="text-3xl font-black text-yellow-500">2</div>
+                        <div class="text-xs uppercase font-bold text-gray-400">Dialects</div>
+                    </div>
+                    <div class="fun-card p-4 text-center border-l-4 border-purple-500">
+                        <div class="text-3xl font-black text-purple-600">75</div>
+                        <div class="text-xs uppercase font-bold text-gray-400">Exam Marks</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Section 4: Study Zone -->
-        <section id="study" class="section-content hidden">
-            <h2 class="text-4xl font-bold mb-6">Study Zone</h2>
-            <p class="text-xl mb-8">Test your knowledge with these mini-quizzes based on the exam!</p>
+        <!-- GRAMMAR LAB VIEW -->
+        <section id="grammar" class="view-section hidden">
+            <h2 class="text-4xl font-bold text-spain-red mb-6 text-center">Laboratorio de Gramática 🧪</h2>
             
-            <div id="quiz-container">
-                <!-- Quiz 1: Tener Idioms -->
-                <h3 class="text-2xl font-bold mb-4">Quiz 1: "Tener" Idioms</h3>
-                <div class="quiz-question">
-                    <label class="font-semibold">"Tengo hambre" means...</label>
-                    <div class="mt-2 space-y-1">
-                        <div><input type="radio" name="q1" value="a"> I am hot</div>
-                        <div><input type="radio" name="q1" value="b"> I am hungry</div>
-                        <div><input type="radio" name="q1" value="c"> I am scared</div>
+            <!-- Subject Pronouns -->
+            <div class="fun-card red-border p-6 mb-8">
+                <h3 class="text-xl font-bold mb-4"><i class="fas fa-users mr-2 text-spain-red"></i> The "People" Grid (Pronouns)</h3>
+                <div class="grid grid-cols-2 gap-4 text-center">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-blue-800 mb-2">Singular (1 Person)</h4>
+                        <p>Yo <span class="text-gray-400 text-sm">(I)</span></p>
+                        <p>Tú <span class="text-gray-400 text-sm">(You)</span></p>
+                        <p>Él / Ella <span class="text-gray-400 text-sm">(He/She)</span></p>
                     </div>
-                    <div class="quiz-feedback hidden"></div>
-                </div>
-                <div class="quiz-question">
-                    <label class="font-semibold">How do you say "I am cold" in Spanish?</label>
-                    <div class="mt-2 space-y-1">
-                        <div><input type="radio" name="q2" value="a"> Tengo frío</div>
-                        <div><input type="radio" name="q2" value="b"> Soy frío</div>
-                        <div><input type="radio" name="q2" value="c"> Estoy frío</div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-green-800 mb-2">Plural (Group)</h4>
+                        <p>Nosotros <span class="text-gray-400 text-sm">(We)</span></p>
+                        <p>Vosotros 🇪🇸 <span class="text-gray-400 text-sm">(You guys)</span></p>
+                        <p>Ellos / Ustedes 🌎 <span class="text-gray-400 text-sm">(They/You guys)</span></p>
                     </div>
-                    <div class="quiz-feedback hidden"></div>
                 </div>
-
-                <!-- Quiz 2: Articles -->
-                <h3 class="text-2xl font-bold mb-4 mt-10">Quiz 2: Tricky Articles</h3>
-                <div class="quiz-question">
-                    <label class="font-semibold">What is the correct article for "problema"?</label>
-                    <div class="mt-2 space-y-1">
-                        <div><input type="radio" name="q3" value="a"> La</div>
-                        <div><input type="radio" name="q3" value="b"> El</div>
-                        <div><input type="radio" name="q3" value="c"> Las</div>
-                    </div>
-                    <div class="quiz-feedback hidden"></div>
-                </div>
-
-                <!-- Quiz 3: Telling Time -->
-                <h3 class="text-2xl font-bold mb-4 mt-10">Quiz 3: Telling Time</h3>
-                <div class="quiz-question">
-                    <label class="font-semibold" for="q4">How do you write "1:00" in Spanish?</label>
-                    <input type="text" id="q4" class="w-full p-2 border border-gray-300 rounded mt-2" placeholder="Type your answer...">
-                    <div class="quiz-feedback hidden"></div>
-                </div>
-                <div class="quiz-question">
-                    <label class="font-semibold" for="q5">How do you write "3:30" in Spanish?</label>
-                    <input type="text" id="q5" class="w-full p-2 border border-gray-300 rounded mt-2" placeholder="Type your answer...">
-                    <div class="quiz-feedback hidden"></div>
-                </div>
-
-                <button class="btn text-xl mt-6" onclick="checkStudyQuiz()">Check My Answers!</button>
-                <div id="quiz-results" class="text-2xl font-bold mt-4"></div>
             </div>
+
+            <!-- The Big Three Verbs -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="fun-card border-t-4 border-blue-500 p-4">
+                    <h3 class="text-center font-bold text-xl mb-3 text-blue-700">SER (Identity)</h3>
+                    <table class="w-full text-center text-sm">
+                        <tr class="bg-blue-100"><td class="p-2 rounded-l">Soy</td><td class="p-2 rounded-r">Somos</td></tr>
+                        <tr><td class="p-2">Eres</td><td class="p-2">Sois</td></tr>
+                        <tr class="bg-blue-50"><td class="p-2 rounded-l">Es</td><td class="p-2 rounded-r">Son</td></tr>
+                    </table>
+                    <p class="text-xs text-center mt-3 text-gray-500">Origin, Descriptions, Time</p>
+                </div>
+                <div class="fun-card border-t-4 border-green-500 p-4">
+                    <h3 class="text-center font-bold text-xl mb-3 text-green-700">ESTAR (State)</h3>
+                    <table class="w-full text-center text-sm">
+                        <tr class="bg-green-100"><td class="p-2 rounded-l">Estoy</td><td class="p-2 rounded-r">Estamos</td></tr>
+                        <tr><td class="p-2">Estás</td><td class="p-2">Estáis</td></tr>
+                        <tr class="bg-green-50"><td class="p-2 rounded-l">Está</td><td class="p-2 rounded-r">Están</td></tr>
+                    </table>
+                    <p class="text-xs text-center mt-3 text-gray-500">Location, Emotion, Condition</p>
+                </div>
+                <div class="fun-card border-t-4 border-purple-500 p-4">
+                    <h3 class="text-center font-bold text-xl mb-3 text-purple-700">TENER (Have)</h3>
+                    <table class="w-full text-center text-sm">
+                        <tr class="bg-purple-100"><td class="p-2 rounded-l">Tengo</td><td class="p-2 rounded-r">Tenemos</td></tr>
+                        <tr><td class="p-2">Tienes</td><td class="p-2">Tenéis</td></tr>
+                        <tr class="bg-purple-50"><td class="p-2 rounded-l">Tiene</td><td class="p-2 rounded-r">Tienen</td></tr>
+                    </table>
+                    <p class="text-xs text-center mt-3 text-gray-500">Possession, Age, Idioms</p>
+                </div>
+            </div>
+
+            <!-- SER vs ESTAR: DOCTOR vs PLACE -->
+            <div class="fun-card gold-border p-6 mb-8">
+                <h3 class="text-2xl font-bold mb-4 text-center">The Showdown: DOCTOR vs PLACE</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-blue-50 p-4 rounded-xl">
+                        <h4 class="font-bold text-blue-800 text-lg mb-2 text-center">SER (Permanent)</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex items-center"><span class="bg-blue-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">D</span> Description (Soy alto)</li>
+                            <li class="flex items-center"><span class="bg-blue-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">O</span> Occupation (Eres estudiante)</li>
+                            <li class="flex items-center"><span class="bg-blue-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">C</span> Characteristic (Es inteligente)</li>
+                            <li class="flex items-center"><span class="bg-blue-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">T</span> Time (Son las dos)</li>
+                            <li class="flex items-center"><span class="bg-blue-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">O</span> Origin (Somos de España)</li>
+                            <li class="flex items-center"><span class="bg-blue-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">R</span> Relationship (Ella es mi madre)</li>
+                        </ul>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-xl">
+                        <h4 class="font-bold text-green-800 text-lg mb-2 text-center">ESTAR (Temporary)</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex items-center"><span class="bg-green-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">P</span> Position (Estás sentado)</li>
+                            <li class="flex items-center"><span class="bg-green-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">L</span> Location (Madrid está en España)</li>
+                            <li class="flex items-center"><span class="bg-green-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">A</span> Action (Estoy comiendo)</li>
+                            <li class="flex items-center"><span class="bg-green-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">C</span> Condition (Estás enfermo)</li>
+                            <li class="flex items-center"><span class="bg-green-200 w-6 h-6 rounded flex items-center justify-center mr-2 font-bold">E</span> Emotion (Estamos felices)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sorting Hat Game -->
+            <div class="fun-card teal-border p-6 text-center">
+                <h3 class="font-bold text-xl mb-4">Sorting Hat: El vs La</h3>
+                <div id="sort-game" class="max-w-md mx-auto">
+                    <div id="sort-word" class="text-4xl font-black mb-6 animate-bounce">Problema</div>
+                    <div class="flex justify-center gap-4">
+                        <button onclick="sortGuess('el')" class="px-8 py-3 bg-blue-600 text-white rounded-lg font-bold shadow hover:bg-blue-700">EL (Masc)</button>
+                        <button onclick="sortGuess('la')" class="px-8 py-3 bg-pink-500 text-white rounded-lg font-bold shadow hover:bg-pink-600">LA (Fem)</button>
+                    </div>
+                    <p id="sort-feedback" class="mt-4 font-bold h-6 text-lg"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VOCAB FIESTA VIEW -->
+        <section id="vocab" class="view-section hidden">
+            <h2 class="text-4xl font-bold text-latam-teal mb-6 text-center">Vocab Fiesta 🪅</h2>
+            
+            <div class="flex justify-center gap-2 mb-8 flex-wrap">
+                <button class="px-4 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm font-bold" onclick="filterVocab('all')">All</button>
+                <button class="px-4 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm font-bold" onclick="filterVocab('school')">School</button>
+                <button class="px-4 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm font-bold" onclick="filterVocab('idiom')">Idioms</button>
+                <button class="px-4 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-sm font-bold" onclick="filterVocab('regional')">Regional</button>
+            </div>
+
+            <div id="vocab-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Cards injected by JS -->
+            </div>
+        </section>
+
+        <!-- CULTURE LOUNGE VIEW -->
+        <section id="culture" class="view-section hidden">
+            <h2 class="text-4xl font-bold text-purple-700 mb-6 text-center">Culture Lounge 💃</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Z Sound -->
+                <div class="fun-card red-border p-6">
+                    <h3 class="text-2xl font-bold mb-3">The "Z" Sound</h3>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="text-4xl">👞</div>
+                        <div class="text-xl font-bold">Zapatos</div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <span class="text-2xl mr-3">🇪🇸</span>
+                            <div>
+                                <p class="font-bold">Spain: "Th-apatos"</p>
+                                <p class="text-sm text-gray-500">Like "Think". This is called <i>Distinción</i>.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-2xl mr-3">🌎</span>
+                            <div>
+                                <p class="font-bold">LatAm: "S-apatos"</p>
+                                <p class="text-sm text-gray-500">Like "Snake". This is called <i>Seseo</i>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danger Words -->
+                <div class="fun-card bg-red-50 border-red-500 border-2 p-6">
+                    <h3 class="text-2xl font-bold mb-3 text-red-700"><i class="fas fa-exclamation-triangle"></i> DANGER ZONE</h3>
+                    <p class="mb-4 font-bold">Word: "Coger" (To grab/take)</p>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <span class="text-2xl mr-3">🇪🇸</span>
+                            <div>
+                                <p class="font-bold text-green-700">Spain: Safe!</p>
+                                <p class="text-sm">"Voy a coger el autobús." (I'm catching the bus)</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-2xl mr-3">🌎</span>
+                            <div>
+                                <p class="font-bold text-red-700">LatAm: VERY BAD!</p>
+                                <p class="text-sm">It is a vulgar sexual word. Use <b>Tomar</b> instead!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Greetings -->
+                <div class="fun-card teal-border p-6 md:col-span-2">
+                    <h3 class="text-2xl font-bold mb-3">Greetings</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl mb-2">💋💋</div>
+                            <p class="font-bold">Spain</p>
+                            <p class="text-sm">Two kisses (Right then Left)</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl mb-2">💋</div>
+                            <p class="font-bold">Argentina</p>
+                            <p class="text-sm">One kiss (Even men!)</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl mb-2">🤝</div>
+                            <p class="font-bold">Mexico</p>
+                            <p class="text-sm">Handshake or Hug</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXAM HALL VIEW -->
+        <section id="exam" class="view-section hidden">
+            <div class="bg-white rounded-t-xl border-t-8 border-yellow-400 p-8 shadow-lg mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div>
+                        <h2 class="text-4xl font-black text-gray-800">Internal Exam Quick Practice</h2>
+                        <p class="text-gray-500 font-bold mt-2">75 Marks • 75 Minutes • Units 1 & 2</p>
+                    </div>
+                    <div class="text-right mt-4 md:mt-0">
+                        <button onclick="submitExam()" class="px-8 py-3 bg-green-600 text-white font-bold rounded-lg shadow hover:bg-green-700 transition">Submit Exam</button>
+                        <p id="exam-timer" class="text-sm font-mono mt-2 text-red-500">Time Remaining: 75:00</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="exam-form" class="max-w-4xl mx-auto space-y-8 pb-12">
+                
+                <!-- SECTION A -->
+                <div class="fun-card red-border p-6">
+                    <h3 class="text-xl font-bold mb-4 bg-spain-red text-white p-2 rounded inline-block">Section A: Vocab & Culture (15 Marks)</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="q-block">
+                            <p class="font-bold">1. How do you say "The pen" in Spain?</p>
+                            <div class="ml-4 space-y-1">
+                                <label><input type="radio" name="q1" value="a"> La Pluma</label><br>
+                                <label><input type="radio" name="q1" value="b"> El Bolígrafo</label>
+                            </div>
+                        </div>
+
+                        <div class="q-block">
+                            <p class="font-bold">2. Translate: "Tengo sueño"</p>
+                            <div class="ml-4 space-y-1">
+                                <label><input type="radio" name="q2" value="a"> I am hungry</label><br>
+                                <label><input type="radio" name="q2" value="b"> I am sleepy</label>
+                            </div>
+                        </div>
+
+                        <div class="q-block bg-gray-50 p-4 rounded">
+                            <p class="font-bold mb-2">3. Regional Matching</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><span class="font-bold text-gray-400">Word</span><br>Coger</div>
+                                <select id="match-1" class="border p-1 rounded w-full"><option value="">Select Region...</option><option value="D">Spain (Grab)</option><option value="B">LatAm (Take)</option></select>
+                                
+                                <div><span class="font-bold text-gray-400">Word</span><br>La Pizarra</div>
+                                <select id="match-2" class="border p-1 rounded w-full"><option value="">Select Meaning...</option><option value="E">Blackboard</option><option value="C">Computer</option></select>
+                            </div>
+                        </div>
+
+                        <div class="q-block">
+                            <p class="font-bold">4. Maths: Cinco + Ocho = ? (Write word)</p>
+                            <input type="text" id="math-1" class="border-b-2 border-gray-300 focus:border-red-500 outline-none w-48 ml-4">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION B -->
+                <div class="fun-card teal-border p-6">
+                    <h3 class="text-xl font-bold mb-4 bg-latam-teal text-white p-2 rounded inline-block">Section B: Ser vs Estar (20 Marks)</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-3 rounded">
+                                <p class="font-bold mb-2">Madrid _____ en España.</p>
+                                <select id="gm-1" class="w-full border p-2 rounded"><option>...</option><option value="es">es</option><option value="esta">está</option></select>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded">
+                                <p class="font-bold mb-2">Nosotros _____ inteligentes.</p>
+                                <select id="gm-2" class="w-full border p-2 rounded"><option>...</option><option value="somos">somos</option><option value="estamos">estamos</option></select>
+                            </div>
+                        </div>
+                        
+                        <div class="q-block">
+                            <p class="font-bold mb-2">Danger Zone: Explain "Marta es aburrida" vs "Marta está aburrida"</p>
+                            <textarea class="w-full border p-2 rounded h-20" placeholder="Type explanation..."></textarea>
+                            <p class="text-xs text-gray-400 mt-1">Self-check: One is personality, one is state.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION C -->
+                <div class="fun-card gold-border p-6">
+                    <h3 class="text-xl font-bold mb-4 bg-yellow-400 text-red-900 p-2 rounded inline-block">Section C: Time & Tener (20 Marks)</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="q-block">
+                            <p class="font-bold">Write the Time:</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                <div>1:00 <input id="time-1" type="text" class="border-b w-32 ml-2" placeholder="Es la..."></div>
+                                <div>3:30 <input id="time-2" type="text" class="border-b w-32 ml-2" placeholder="Son las..."></div>
+                            </div>
+                        </div>
+                        
+                        <div class="q-block">
+                            <p class="font-bold">Translate Idiom: "Tener calor"</p>
+                            <input id="idiom-1" type="text" class="border-b w-full" placeholder="English translation...">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RESULTS -->
+                <div id="exam-results" class="hidden text-center p-8 bg-white rounded-xl shadow-2xl border-4 border-green-500">
+                    <h3 class="text-4xl font-black text-green-600 mb-2">Exam Submitted!</h3>
+                    <p class="text-2xl font-bold text-gray-700">Your Objective Score: <span id="score-display">0</span> / 45</p>
+                    <p class="text-gray-500 mt-2">Note: Sections D (Reading) and E (Writing) require manual teacher marking (30 marks).</p>
+                    <button onclick="nav('dashboard')" class="mt-6 px-6 py-2 bg-gray-800 text-white rounded font-bold">Return to Dashboard</button>
+                </div>
+
+            </form>
         </section>
 
     </main>
 
     <script>
-        let selectedSentence = null;
-        const navButtons = {};
-        const sections = {};
-
-        const quizAnswers = {
-            q1: 'b',
-            q2: 'a',
-            q3: 'b',
-            q4: 'es la una',
-            q5: 'son las tres y media'
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const navIds = ['overview', 'grammar', 'vocab', 'study'];
-            navIds.forEach(id => {
-                navButtons[id] = document.getElementById(`nav-${id}`);
-                sections[id] = document.getElementById(id);
-            });
-        });
-
-        function showSection(sectionId) {
-            Object.keys(sections).forEach(id => {
-                sections[id].classList.add('hidden');
-                navButtons[id].classList.remove('active');
-            });
-            sections[sectionId].classList.remove('hidden');
-            navButtons[sectionId].classList.add('active');
-        }
-
-        function toggleTable(tableId) {
-            document.getElementById(tableId).classList.toggle('hidden');
-        }
-
-        function flipCard(cardElement) {
-            cardElement.classList.toggle('is-flipped');
-        }
-
-        function selectSentence(el) {
-            if (selectedSentence) {
-                selectedSentence.style.border = 'none';
-            }
-            selectedSentence = el;
-            selectedSentence.style.border = '3px solid #B4846C';
-            document.getElementById('quiz-feedback').innerText = `Selected: "${el.innerText}". Now click the correct verb box.`;
-        }
-
-        function checkSerEstar(verbChoice) {
-            const feedback = document.getElementById('quiz-feedback');
-            if (!selectedSentence) {
-                feedback.innerText = "Please select a sentence first!";
-                feedback.style.color = 'red';
-                return;
-            }
-
-            const isCorrect = selectedSentence.dataset.answer === verbChoice;
+        // --- NAVIGATION ---
+        function nav(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
             
-            if (isCorrect) {
-                const targetList = document.getElementById(`${verbChoice}-list`);
-                selectedSentence.style.border = '2px solid green';
-                selectedSentence.onclick = null; // Disable clicking
-                targetList.appendChild(selectedSentence);
-                feedback.innerText = "Correcto! (Correct!)";
-                feedback.style.color = 'green';
-            } else {
-                selectedSentence.style.border = '2px solid red';
-                feedback.innerText = "Incorrecto! (Incorrect!) Try again.";
-                feedback.style.color = 'red';
-            }
-            selectedSentence = null;
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const btn = document.getElementById(`btn-${viewId}`);
+            if(btn) btn.classList.add('active');
+
+            if(viewId === 'dashboard') initChart();
         }
 
-        function checkStudyQuiz() {
+        // --- CHART.JS ---
+        let chartInstance = null;
+        function initChart() {
+            const ctx = document.getElementById('masteryChart');
+            if (chartInstance) return;
+            chartInstance = new Chart(ctx, {
+                type: 'polarArea',
+                data: {
+                    labels: ['Grammar', 'Vocab', 'Culture', 'Time', 'Exam Skills'],
+                    datasets: [{
+                        data: [80, 65, 90, 40, 50],
+                        backgroundColor: [
+                            'rgba(201, 0, 22, 0.6)', // Red
+                            'rgba(0, 155, 119, 0.6)', // Teal
+                            'rgba(255, 215, 0, 0.6)', // Gold
+                            'rgba(255, 143, 0, 0.6)', // Orange
+                            'rgba(75, 29, 63, 0.6)'   // Purple
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { r: { display: false } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // --- VOCAB CARDS ---
+        const vocabList = [
+            { es: "El Bolígrafo", en: "The Pen", em: "🖊️", tag: "school", region: "🇪🇸" },
+            { es: "La Pluma", en: "The Pen", em: "🖊️", tag: "school", region: "🌎" },
+            { es: "El Ordenador", en: "Computer", em: "💻", tag: "school", region: "🇪🇸" },
+            { es: "La Computadora", en: "Computer", em: "💻", tag: "school", region: "🌎" },
+            { es: "Tener hambre", en: "To be hungry", em: "🍔", tag: "idiom", region: "N/A" },
+            { es: "Tener frío", en: "To be cold", em: "🥶", tag: "idiom", region: "N/A" },
+            { es: "La Pizarra", en: "Blackboard", em: "👩‍🏫", tag: "school", region: "N/A" },
+            { es: "Coger", en: "To grab (Safe in Spain)", em: "🤲", tag: "regional", region: "🇪🇸" },
+            { es: "Tomar", en: "To take (Safe everywhere)", em: "🤲", tag: "regional", region: "🌎" },
+            { es: "Vosotros", en: "You guys", em: "👥", tag: "regional", region: "🇪🇸" },
+            { es: "Es la una", en: "It is 1:00", em: "🕐", tag: "school", region: "N/A" }
+        ];
+
+        function renderVocab(filter) {
+            const grid = document.getElementById('vocab-grid');
+            grid.innerHTML = vocabList.filter(v => filter === 'all' || v.tag === filter).map(v => `
+                <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-inner">
+                        <div class="flip-front">
+                            <div class="text-5xl mb-2">${v.em}</div>
+                            <h3 class="font-bold text-xl">${v.en}</h3>
+                            <span class="absolute top-2 right-2 text-2xl">${v.region}</span>
+                        </div>
+                        <div class="flip-back">
+                            <h3 class="font-bold text-xl text-spain-red">${v.es}</h3>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function filterVocab(cat) { renderVocab(cat); }
+
+        // --- SORTING HAT ---
+        const sortWords = [
+            {w:"Problema", a:"el", h:"Ends in -MA (Greek)!"}, 
+            {w:"Casa", a:"la", h:"Ends in -A"}, 
+            {w:"Libertad", a:"la", h:"Ends in -AD"}, 
+            {w:"Chico", a:"el", h:"Ends in -O"}
+        ];
+        let sortIdx = 0;
+        function sortGuess(g) {
+            const current = sortWords[sortIdx];
+            const fb = document.getElementById('sort-feedback');
+            if(g === current.a) {
+                fb.innerText = "¡Correcto! " + current.h;
+                fb.className = "mt-4 font-bold h-6 text-lg text-green-600";
+            } else {
+                fb.innerText = "Incorrecto. " + current.h;
+                fb.className = "mt-4 font-bold h-6 text-lg text-red-600";
+            }
+            setTimeout(() => {
+                sortIdx = (sortIdx + 1) % sortWords.length;
+                document.getElementById('sort-word').innerText = sortWords[sortIdx].w;
+                fb.innerText = "";
+            }, 2000);
+        }
+
+        // --- EXAM LOGIC ---
+        function submitExam() {
             let score = 0;
-            let total = 0;
+            // Section A
+            if(document.querySelector('input[name="q1"]:checked')?.value === 'b') score += 5;
+            if(document.querySelector('input[name="q2"]:checked')?.value === 'b') score += 5;
+            if(document.getElementById('match-1').value === 'D') score += 2;
+            if(document.getElementById('match-2').value === 'E') score += 2;
+            if(document.getElementById('math-1').value.toLowerCase().includes('trece')) score += 5;
 
-            // Q1
-            total++;
-            const q1 = document.querySelector('input[name="q1"]:checked');
-            const q1Feedback = q1.parentElement.parentElement.nextElementSibling;
-            if (q1 && q1.value === quizAnswers.q1) {
-                score++;
-                q1Feedback.innerText = "Correct! 'Tengo hambre' means 'I am hungry'.";
-                q1Feedback.className = 'quiz-feedback correct';
-            } else {
-                q1Feedback.innerText = "Incorrect. The correct answer is 'I am hungry'.";
-                q1Feedback.className = 'quiz-feedback incorrect';
-            }
+            // Section B
+            if(document.getElementById('gm-1').value === 'esta') score += 5;
+            if(document.getElementById('gm-2').value === 'somos') score += 5;
 
-            // Q2
-            total++;
-            const q2 = document.querySelector('input[name="q2"]:checked');
-            const q2Feedback = q2.parentElement.parentElement.nextElementSibling;
-            if (q2 && q2.value === quizAnswers.q2) {
-                score++;
-                q2Feedback.innerText = "Correct! 'Tengo frío' is used for 'I am cold'.";
-                q2Feedback.className = 'quiz-feedback correct';
-            } else {
-                q2Feedback.innerText = "Incorrect. We use TENER for 'to be cold', so 'Tengo frío'.";
-                q2Feedback.className = 'quiz-feedback incorrect';
-            }
+            // Section C
+            if(document.getElementById('time-1').value.toLowerCase().includes('es la una')) score += 5;
+            if(document.getElementById('time-2').value.toLowerCase().includes('tres y media')) score += 5;
+            if(document.getElementById('idiom-1').value.toLowerCase().includes('hot')) score += 5;
 
-            // Q3
-            total++;
-            const q3 = document.querySelector('input[name="q3"]:checked');
-            const q3Feedback = q3.parentElement.parentElement.nextElementSibling;
-            if (q3 && q3.value === quizAnswers.q3) {
-                score++;
-                q3Feedback.innerText = "Correct! Words ending in -MA are often masculine, so 'El problema'.";
-                q3Feedback.className = 'quiz-feedback correct';
-            } else {
-                q3Feedback.innerText = "Incorrect. This is a trick question! 'El problema' is correct.";
-                q3Feedback.className = 'quiz-feedback incorrect';
-            }
-
-            // Q4
-            total++;
-            const q4 = document.getElementById('q4');
-            const q4Feedback = q4.nextElementSibling;
-            if (q4.value.trim().toLowerCase() === quizAnswers.q4) {
-                score++;
-                q4Feedback.innerText = "Correct! 'Es la una'.";
-                q4Feedback.className = 'quiz-feedback correct';
-            } else {
-                q4Feedback.innerText = "Incorrect. The correct answer is 'Es la una' (we use 'Es' for 1:00).";
-                q4Feedback.className = 'quiz-feedback incorrect';
-            }
-
-            // Q5
-            total++;
-            const q5 = document.getElementById('q5');
-            const q5Feedback = q5.nextElementSibling;
-            if (q5.value.trim().toLowerCase().includes(quizAnswers.q5)) {
-                score++;
-                q5Feedback.innerText = "Correct! 'Son las tres y media' (or 'y treinta').";
-                q5Feedback.className = 'quiz-feedback correct';
-            } else {
-                q5Feedback.innerText = "Incorrect. The correct answer is 'Son las tres y media'.";
-                q5Feedback.className = 'quiz-feedback incorrect';
-            }
-
-            // Display final score
-            const results = document.getElementById('quiz-results');
-            results.innerText = `Your Score: ${score} / ${total}`;
-            if (score === total) {
-                results.style.color = 'green';
-            } else {
-                results.style.color = '#7D5A50';
-            }
+            document.getElementById('exam-form').classList.add('hidden');
+            document.getElementById('exam-results').classList.remove('hidden');
+            document.getElementById('score-display').innerText = score;
         }
 
+        // Init
+        renderVocab('all');
+        initChart();
     </script>
 </body>
 </html>
